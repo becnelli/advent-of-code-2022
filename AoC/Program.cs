@@ -1,7 +1,7 @@
 ﻿using AoC.Lib;
 
 int day = DateTime.Now.Day;
-string dayStr = DateTime.Now.ToString("dd");
+string dayStr = day.ToString("D2");
 
 
 Console.WriteLine("Solving for AoC Day " + day);
