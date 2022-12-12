@@ -10,219 +10,211 @@ namespace AoC.Lib.Solutions
 {
     public class Day11 : ISolution
     {
-        public List<Monkey> GetMonkeyTestList()
+        public IEnumerable<Monkey> ParseMonkeyList(string filename)
         {
-            List<Monkey> monkeys = new List<Monkey>();
-            monkeys.Add(new Monkey(0, new long[] {79, 98}, true));
-            monkeys.Add(new Monkey(1, new long[] {54, 65, 75, 74}, true));
-            monkeys.Add(new Monkey(2, new long[] {79, 60, 97}, true));
-            monkeys.Add(new Monkey(3, new long[] {74}, true));
-            return monkeys;
+            List<string> lines = Helpers.ReadFile(filename).ToList();
+
+            Regex monkeyLine = new Regex("^Monkey (\\d+):$");
+            Regex itemsLine = new Regex("^\\s+Starting items: ([\\d, ]+)$");
+            Regex operationLine = new Regex("^\\s+Operation: new = ([^\\s]+) (.) ([^\\s]+)$");
+            Regex testLine = new Regex("^\\s+Test: divisible by (\\d+)$");
+            Regex ifTrue = new Regex("^\\s+If true: throw to monkey (\\d+)$");
+            Regex ifFalse = new Regex("^\\s+If false: throw to monkey (\\d+)$");
+
+            Monkey monkey = null;
+
+            foreach(string line in Helpers.ReadFile(filename))
+            {
+                if(monkeyLine.IsMatch(line))
+                {
+                    if(monkey != null) yield return monkey;
+                
+                    Match match = monkeyLine.Match(line);
+
+                    monkey = new Monkey(Int32.Parse(match.Groups[1].Value));
+                    continue;
+                }
+
+                if(monkey == null)
+                    continue;
+
+                if(itemsLine.IsMatch(line))
+                {
+                    Match match = itemsLine.Match(line);
+                    monkey.InitializeItems(match.Groups[1].Value);
+                }
+                else if(operationLine.IsMatch(line))
+                {
+                    Match match = operationLine.Match(line);
+
+                    string op = match.Groups[2].Value;
+
+                    if(match.Groups[2].Value == "*" && match.Groups[3].Value == "old")
+                    {
+                        monkey.AddOperator((x) => x * x);
+                        continue;
+                    }
+                    
+                    int val = Int32.Parse(match.Groups[3].Value);
+
+                    switch(match.Groups[2].Value)
+                    {
+                        case "*":
+                            monkey.AddOperator((x) => x * val);
+                            break;
+
+                        case "+":
+                            monkey.AddOperator((x) => x + val);
+                            break;
+
+                        case "-":
+                            monkey.AddOperator((x) => x - val);
+                            break;
+                    }
+                }
+                else if(testLine.IsMatch(line))
+                {
+                    Match match = testLine.Match(line);
+                    monkey.AddDivisor(Int32.Parse(match.Groups[1].Value));
+                }
+                else if(ifTrue.IsMatch(line))
+                {
+                    Match match = ifTrue.Match(line);
+                    monkey.AddTrueDest(Int32.Parse(match.Groups[1].Value));
+                }
+                else if(ifFalse.IsMatch(line))
+                {
+                    Match match = ifFalse.Match(line);
+                    monkey.AddFalseDest(Int32.Parse(match.Groups[1].Value));
+                }
+            }
+            
+            if(monkey != null)
+                yield return monkey;
         }
 
-        static long LCM(long[] numbers)
+        static int LCM(int[] numbers)
         {
             return numbers.Aggregate(lcm);
         }
         
-        static long lcm(long a, long b)
+        static int lcm(int a, int b)
         {
             return Math.Abs(a * b) / GCD(a, b);
         }
 
-        static long GCD(long a, long b)
+        static int GCD(int a, int b)
         {
             return b == 0 ? a : GCD(b, a % b);
-        }
-         
-        public List<Monkey> GetMonkeyList()
-        {
-            List<Monkey> monkeys = new List<Monkey>();
-            monkeys.Add(new Monkey(0, new long[] {50, 70, 54, 83, 52, 78}, false));
-            monkeys.Add(new Monkey(1, new long[] {71, 52, 58, 60, 71}, false));
-            monkeys.Add(new Monkey(2, new long[] {66, 56, 56, 94, 60, 86, 73}, false));
-            monkeys.Add(new Monkey(3, new long[] {83, 99}, false));
-            monkeys.Add(new Monkey(4, new long[] {98, 98, 79}, false));
-            monkeys.Add(new Monkey(5, new long[] {76}, false));
-            monkeys.Add(new Monkey(6, new long[] {52, 51, 84, 54}, false));
-            monkeys.Add(new Monkey(7, new long[] {82, 86, 91, 79, 94, 92, 59, 94}, false));
-
-            return monkeys;
         }
 
         public object Part1(string filename)
         {
+            List<Monkey> monkeys = ParseMonkeyList(filename).ToList();
+
             List<long> inspectCount = new List<long>();
-            inspectCount.Add(0);
-            inspectCount.Add(0);
-            inspectCount.Add(0);
-            inspectCount.Add(0);
-            inspectCount.Add(0);
-            inspectCount.Add(0);
-            inspectCount.Add(0);
-            inspectCount.Add(0);
-
-            bool testData = false;
-
-            List<Monkey> monkeys = testData ? GetMonkeyTestList(): GetMonkeyList();
-
-            long myLCM =testData ? LCM(new long[]{19, 23, 13, 17}) : LCM(new long[]{11, 7, 3, 5, 17, 13, 19, 2});
-
-
-          
-            foreach(Monkey monkey in monkeys)
+            for(int i = 0; i< monkeys.Count; i++)
             {
-                monkey.Print(0);
+                inspectCount.Add(0);
             }
 
-            Console.WriteLine();
-            for(int i =0; i <10000; i++)
+            for(int i =0; i < 20; i++)
             {
-                //Console.WriteLine($"ROUND: {i}");
                 foreach(Monkey monkey in monkeys)
                 {
                     inspectCount[monkey.Id] += monkey.Items.Count;
 
-                    foreach(Item item in monkey.Items)
+                    foreach(long item in monkey.Items)
                     {
-                        long newVal = monkey.OperateOnItem(item.Value);
-                        long postWorry = newVal % myLCM; //newval > myLCM ? (long)Math.Floor(newVal / (double)myLCM) : newVal;
-                        int dest = monkey.ThrowTo(postWorry);
-                        monkeys[dest].AddItem(new Item(item.Id, postWorry));
+                        long newVal = monkey.OperateOn(item);
+                        long postWorry = (long)Math.Floor(newVal / 3.0);
+                        int dest = monkey.GetDestination(postWorry);
+                        monkeys[dest].AddItem(postWorry);
                     }
 
                     monkey.ClearItems();
                 }
-/*
-                foreach(Monkey monkey in monkeys)
-                {
-                    //monkey.Print(inspectCount[monkey.Id]);
-                }*/
-
-                if( i == 0 || i == 19 || i == 999 )
-                {
-                Console.WriteLine(string.Join(",", inspectCount));
-                Console.WriteLine();
-                }
-                
             }
 
             inspectCount.Sort();
 
-            return inspectCount[7] * inspectCount[6];
+            return inspectCount[monkeys.Count - 1] * inspectCount[monkeys.Count -2];
         }
 
         public object Part2(string filename)
         {
-            foreach(string line in Helpers.ReadFile(filename))
+            List<Monkey> monkeys = ParseMonkeyList(filename).ToList();
+
+            if(!monkeys.Any())
             {
+                return "IDK";
             }
-            
-            return "TBD";
-        }
-    }
 
-    public class Item 
-    {
-        public long Value {get;set;}
-        public string Id {get;set;}
+            List<long> inspectCount = new List<long>();
+            for(int i = 0; i< monkeys.Count; i++)
+            {
+                inspectCount.Add(0);
+            }
 
-        public Item(string id, long val)
-        {
-            this.Id = id;
-            this.Value = val;
+            long myLCM = LCM(monkeys.Select(x => x.Divisor).ToArray());
+
+            for(int i =0; i < 10000; i++)
+            {
+                foreach(Monkey monkey in monkeys)
+                {
+                    inspectCount[monkey.Id] += monkey.Items.Count;
+
+                    foreach(long item in monkey.Items)
+                    {
+                        long newVal = monkey.OperateOn(item);
+                        long postWorry = newVal % myLCM;
+                        int dest = monkey.GetDestination(postWorry);
+                        monkeys[dest].AddItem(postWorry);
+                    }
+
+                    monkey.ClearItems();
+                }
+            }
+
+            inspectCount.Sort();
+
+            return inspectCount[monkeys.Count - 1] * inspectCount[monkeys.Count -2];
         }
     }
 
     public class Monkey
     {
-        public List<Item> Items {get; private set;}
+        public List<long> Items { get; private set; }
+
         public int Id {get; private set;}
 
-        private bool TestMonkeys;
+        public int Divisor {get;private set;}
+        
+        public int TrueDest {get;private set;}
+        
+        public int FalseDest {get;private set;}
+        
+        private Func<long, long> Operation {  get; set; }
 
-        public Monkey(int id,long[]  items, bool testMonkeys)
+        public Monkey(int id)
         {
-            Id = id;
-
-            Items = new List<Item>();
-            for(int i = 0; i < items.Count(); i++)
-            {
-                Items.Add(new Item(id + "-" + i, items[i]));
-            }
-
-            TestMonkeys = testMonkeys;
+            this.Id = id;
+            this.Items = new List<long>();
+            Operation = (x) => x; // default to returning item (aka x)
         }
 
-        public void AddItem(Item item)        
+        public void InitializeItems(string items)
+        {
+            this.Items.Clear();
+            foreach(string item in items.Split(",", StringSplitOptions.RemoveEmptyEntries))
+            {
+                Items.Add(long.Parse(item));
+            }
+        }
+
+        public void AddItem(long item)
         {
             Items.Add(item);
-/*
-            if(TestMonkeys)
-            {
-                switch(Id)
-                {
-                    case 0:
-                        return item * 19;
-                    case 1:
-                        return item + 6;
-                    case 2:
-                        return item * item;
-                    case 3:
-                        return item + 3;
-                }
-                switch(Id)
-                {
-                    case 0:
-                        return (item % 23 == 0) ? 2 : 3;
-                    case 1:
-                        return (item % 19 == 0) ? 2 : 0;
-                    case 2:
-                        return (item % 13 == 0) ? 1 : 3;
-                    case 3:
-                        return (item % 17 == 0) ? 0 : 1;
-                }
-            }
-
-            switch(Id)
-            {
-                case 0:
-                    return item *3;
-                case 1:
-                    return item *item;
-                case 2:
-                    return item +1;
-                case 3:
-                    return item+8;
-                case 4:
-                    return item+3;
-                case 5:
-                    return item+4;
-                case 6:
-                    return item*17;
-                case 7:
-                    return item+7;
-            }
-
-            switch(Id)
-            {
-                case 0:
-                    return (item % 11 == 0) ? 2 : 7;
-                case 1:
-                    return (item % 7 == 0)? 0: 2;
-                case 2:
-                    return (item % 3 == 0)? 7: 5;
-                case 3:
-                    return (item % 5 == 0)? 6: 4;
-                case 4:
-                    return (item % 17 == 0)? 1: 0;
-                case 5:
-                    return (item % 13 == 0)? 6: 3;
-                case 6:
-                    return (item % 19 == 0)? 4: 1;
-                case 7:
-                    return (item % 2 == 0)? 5: 3;
-            }*/
         }
 
         public void ClearItems()
@@ -230,91 +222,34 @@ namespace AoC.Lib.Solutions
             Items.Clear();
         }
 
-        public long OperateOnItem(long item)
+        public void AddDivisor(int divisor)
         {
-            if(TestMonkeys)
-            {
-                switch(Id)
-                {
-                    case 0:
-                        return item *19;
-                    case 1:
-                        return item +6;
-                    case 2:
-                        return item * item;
-                    case 3:
-                        return item+3;
-                }
-            }
-
-            switch(Id)
-            {
-                case 0:
-                    return item *3;
-                case 1:
-                    return item *item;
-                case 2:
-                    return item +1;
-                case 3:
-                    return item+8;
-                case 4:
-                    return item+3;
-                case 5:
-                    return item+4;
-                case 6:
-                    return item*17;
-                case 7:
-                    return item+7;
-            }
-
-            throw new NotImplementedException();
+            this.Divisor = divisor;
         }
 
-        public int ThrowTo(long item)
+        public void AddTrueDest(int dest)
         {
-            if(TestMonkeys)
-            {
-
-                switch(Id)
-                {
-                    case 0:
-                        return (item % 23 == 0) ? 2 : 3;
-                    case 1:
-                        return (item % 19 == 0)? 2: 0;
-                    case 2:
-                        return (item % 13 == 0)? 1: 3;
-                    case 3:
-                        return (item % 17 == 0)? 0: 1;
-                }
-            }
-            switch(Id)
-            {
-                case 0:
-                    return (item % 11 == 0) ? 2 : 7;
-                case 1:
-                    return (item % 7 == 0)? 0: 2;
-                case 2:
-                    return (item % 3 == 0)? 7: 5;
-                case 3:
-                    return (item % 5 == 0)? 6: 4;
-                case 4:
-                    return (item % 17 == 0)? 1: 0;
-                case 5:
-                    return (item % 13 == 0)? 6: 3;
-                case 6:
-                    return (item % 19 == 0)? 4: 1;
-                case 7:
-                    return (item % 2 == 0)? 5: 3;
-            }
-
-
-            throw new NotImplementedException();
+            this.TrueDest = dest;
         }
 
-
-        public void Print(int inspectCount)
+        public void AddFalseDest(int dest)
         {
-            Console.WriteLine($"Monkey {Id} ({inspectCount}): " +  string.Join(", ", Items.Select(x=>x.Value + "/"+ x.Id)));
+            this.FalseDest = dest;
+        }
+
+        public void AddOperator(Func<long, long> operation)
+        {
+            Operation = operation;
+        }
+
+        public long OperateOn(long item)
+        {
+            return Operation.Invoke(item);
+        }
+
+        public int GetDestination(long item)
+        {
+            return item % Divisor == 0 ? TrueDest : FalseDest;
         }
 
     }
