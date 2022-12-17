@@ -35,21 +35,25 @@ namespace AoC.Lib
             }
         }
 
-        public static IEnumerable<IEnumerable<int>> ReadFileAs2DArrayIEnum(string filename)
-        {
-            foreach (string line in ReadFile(filename))
-            {
-                yield return ReadCharsAsInt(line);
-            }
-        }
-
-        public static List<List<int>> ReadFileAs2DArray(string filename)
+        public static List<List<int>> ReadFileAs2DArrayOfInts(string filename)
         {
             List<List<int>> outer = new List<List<int>>();
 
             foreach (string line in ReadFile(filename))
             {
                 outer.Add(ReadCharsAsInt(line).ToList());
+            }
+
+            return outer;
+        }
+
+        public static List<List<char>> ReadFileAs2DArray(string filename)
+        {
+            List<List<char>> outer = new List<List<char>>();
+
+            foreach (string line in ReadFile(filename))
+            {
+                outer.Add(new List<char>(line.ToCharArray()));
             }
 
             return outer;

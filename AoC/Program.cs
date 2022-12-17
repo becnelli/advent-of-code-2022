@@ -1,6 +1,6 @@
 ﻿using AoC.Lib;
 
-int day = DateTime.Now.Day;
+int day = 14;//DateTime.Now.Day;
 string dayStr = day.ToString("D2");
 
 
@@ -30,7 +30,7 @@ string testFile = $"{dayStr}t.txt";
 string testFile2 = $"{dayStr}t2.txt";
 
 Console.WriteLine("Part 1 Test: " + sln.Part1(testFile));
-Console.WriteLine("Part 1: " + sln.Part1(file));
+//Console.WriteLine("Part 1: " + sln.Part1(file));
 
 Console.WriteLine();
 

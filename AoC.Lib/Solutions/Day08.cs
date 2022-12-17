@@ -12,7 +12,7 @@ namespace AoC.Lib.Solutions
 
         public object Part1(string filename)
         {
-            List<List<int>> grid = Helpers.ReadFileAs2DArray(filename);
+            List<List<int>> grid = Helpers.ReadFileAs2DArrayOfInts(filename);
 
             int maxX = grid.Count - 1;
             int maxY = grid[0].Count - 1;
@@ -61,7 +61,7 @@ namespace AoC.Lib.Solutions
 
         public object Part2(string filename)
         {
-            List<List<int>> grid = Helpers.ReadFileAs2DArray(filename);
+            List<List<int>> grid = Helpers.ReadFileAs2DArrayOfInts(filename);
 
             int maxX = grid.Count - 1;
             int maxY = grid[0].Count - 1;
